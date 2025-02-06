@@ -1,0 +1,113 @@
+// Define the Connection interface
+interface Connection {
+    void setListener();
+    void setConsumer();
+    void start();
+}
+
+// Implement Tibco Connection
+class TibcoConnection implements Connection {
+    @Override
+    public void setListener() { /* Not used in Tibco */ }
+
+    @Override
+    public void setConsumer() {
+        System.out.println("Setting up Tibco consumer...");
+    }
+
+    @Override
+    public void start() {
+        System.out.println("Starting Tibco connection...");
+    }
+}
+
+// Implement JNDI Connection
+class JndiConnection implements Connection {
+    @Override
+    public void setListener() {
+        System.out.println("Setting up JNDI listener...");
+    }
+
+    @Override
+    public void setConsumer() { /* Not used in JNDI */ }
+
+    @Override
+    public void start() {
+        System.out.println("Starting JNDI connection...");
+    }
+}
+
+// Connection Factory to get Tibco or JNDI Connection
+class ConnectionFactory {
+    public static Connection getConnection(String type) {
+        if ("tibco".equalsIgnoreCase(type)) {
+            return new TibcoConnection();
+        } else if ("jndi".equalsIgnoreCase(type)) {
+            return new JndiConnection();
+        }
+        throw new IllegalArgumentException("Unknown connection type: " + type);
+    }
+}
+
+// Define OpenConnection interface
+interface OpenConnection {
+    void open(Connection connection);
+}
+
+// Implement OpenTibcoConnection
+class OpenTibcoConnection implements OpenConnection {
+    @Override
+    public void open(Connection connection) {
+        connection.setConsumer();
+        connection.start();
+    }
+}
+
+// Implement OpenJndiConnection
+class OpenJndiConnection implements OpenConnection {
+    @Override
+    public void open(Connection connection) {
+        connection.setListener();
+        connection.start();
+    }
+}
+
+// Factory for OpenConnection implementations
+class OpenConnectionFactory {
+    public static OpenConnection getOpenConnection(String type) {
+        if ("tibco".equalsIgnoreCase(type)) {
+            return new OpenTibcoConnection();
+        } else if ("jndi".equalsIgnoreCase(type)) {
+            return new OpenJndiConnection();
+        }
+        throw new IllegalArgumentException("Unknown connection type: " + type);
+    }
+}
+
+// ABC class that uses the factories
+class ABC {
+    public void openconn1() {
+        Connection tibcoConn = ConnectionFactory.getConnection("tibco");
+        OpenConnection openTibco = OpenConnectionFactory.getOpenConnection("tibco");
+        openTibco.open(tibcoConn);
+    }
+
+    public void openconn2() {
+        Connection jndiConn = ConnectionFactory.getConnection("jndi");
+        OpenConnection openJndi = OpenConnectionFactory.getOpenConnection("jndi");
+        openJndi.open(jndiConn);
+    }
+}
+
+// Main class to run the program
+public class FactoryPatternExample {
+    public static void main(String[] args) {
+        ABC abc = new ABC();
+
+        System.out.println("Opening Tibco Connection:");
+        abc.openconn1();
+
+        System.out.println("\nOpening JNDI Connection:");
+        abc.openconn2();
+    }
+}
