@@ -1,0 +1,101 @@
+// Step 1: Define the Connection interface
+interface Connection {
+    void setListener();
+    void setConsumer();
+    void start();
+}
+
+// Step 2: Implement Tibco Connection
+class TibcoConnection implements Connection {
+    @Override
+    public void setListener() { /* Not required for Tibco */ }
+
+    @Override
+    public void setConsumer() {
+        System.out.println("Setting up Tibco consumer...");
+    }
+
+    @Override
+    public void start() {
+        System.out.println("Starting Tibco connection...");
+    }
+}
+
+// Step 3: Implement JNDI Connection
+class JndiConnection implements Connection {
+    @Override
+    public void setListener() {
+        System.out.println("Setting up JNDI listener...");
+    }
+
+    @Override
+    public void setConsumer() { /* Not required for JNDI */ }
+
+    @Override
+    public void start() {
+        System.out.println("Starting JNDI connection...");
+    }
+}
+
+// Step 4: Define the Abstract Factory
+interface ConnectionFactory {
+    Connection createConnection();
+}
+
+// Step 5: Implement Tibco Connection Factory
+class TibcoConnectionFactory implements ConnectionFactory {
+    @Override
+    public Connection createConnection() {
+        return new TibcoConnection();
+    }
+}
+
+// Step 6: Implement JNDI Connection Factory
+class JndiConnectionFactory implements ConnectionFactory {
+    @Override
+    public Connection createConnection() {
+        return new JndiConnection();
+    }
+}
+
+// Step 7: Create a Factory Provider to return the correct factory
+class FactoryProvider {
+    public static ConnectionFactory getFactory(String type) {
+        if ("tibco".equalsIgnoreCase(type)) {
+            return new TibcoConnectionFactory();
+        } else if ("jndi".equalsIgnoreCase(type)) {
+            return new JndiConnectionFactory();
+        }
+        throw new IllegalArgumentException("Unknown factory type: " + type);
+    }
+}
+
+// Step 8: ABC class that uses the abstract factory
+class ABC {
+    public void openconn1() {
+        ConnectionFactory factory = FactoryProvider.getFactory("tibco");
+        Connection conn = factory.createConnection();
+        conn.setConsumer();
+        conn.start();
+    }
+
+    public void openconn2() {
+        ConnectionFactory factory = FactoryProvider.getFactory("jndi");
+        Connection conn = factory.createConnection();
+        conn.setListener();
+        conn.start();
+    }
+}
+
+// Step 9: Main class to run the program
+public class AbstractFactoryExample {
+    public static void main(String[] args) {
+        ABC abc = new ABC();
+
+        System.out.println("Opening Tibco Connection:");
+        abc.openconn1();
+
+        System.out.println("\nOpening JNDI Connection:");
+        abc.openconn2();
+    }
+}
