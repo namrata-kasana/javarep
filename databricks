@@ -1,0 +1,29 @@
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col
+
+# Initialize Spark session (if not already available)
+spark = SparkSession.builder.appName("DatabricksSQL").getOrCreate()
+
+# Run 4 SQL queries and store results in separate DataFrames
+df1 = spark.sql("SELECT COUNT(*) AS total_orders FROM orders")  # Example Query 1
+df2 = spark.sql("SELECT AVG(price) AS avg_price FROM products")  # Example Query 2
+df3 = spark.sql("SELECT MAX(sales) AS max_sales FROM sales")      # Example Query 3
+df4 = spark.sql("SELECT MIN(discount) AS min_discount FROM discounts")  # Example Query 4
+
+# Add a row ID column for sequential merging
+df1 = df1.withColumn("row_id", col("total_orders") * 0 + 1)  
+df2 = df2.withColumn("row_id", col("avg_price") * 0 + 1)  
+df3 = df3.withColumn("row_id", col("max_sales") * 0 + 1)  
+df4 = df4.withColumn("row_id", col("min_discount") * 0 + 1)  
+
+# Merge DataFrames sequentially using row_id
+final_df = df1.join(df2, "row_id", "outer") \
+              .join(df3, "row_id", "outer") \
+              .join(df4, "row_id", "outer") \
+              .drop("row_id")  # Drop helper column
+
+# Show final result
+final_df.show()
+
+# Store result in a Delta table
+final_df.write.mode("overwrite").format("delta").saveAsTable("final_results")
