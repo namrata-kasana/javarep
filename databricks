@@ -27,3 +27,34 @@ final_df.show()
 
 # Store result in a Delta table
 final_df.write.mode("overwrite").format("delta").saveAsTable("final_results")
+
+
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import lit
+
+# Initialize Spark session (Databricks automatically provides one)
+spark = SparkSession.builder.appName("SequentialDFs").getOrCreate()
+
+# Define 4 DataFrames (Example Queries)
+df1 = spark.sql("SELECT COUNT(*) AS total_orders FROM orders").withColumn("step", lit("Step 1"))
+df2 = spark.sql("SELECT AVG(price) AS avg_price FROM products").withColumn("step", lit("Step 2"))
+df3 = spark.sql("SELECT MAX(sales) AS max_sales FROM sales").withColumn("step", lit("Step 3"))
+df4 = spark.sql("SELECT MIN(discount) AS min_discount FROM discounts").withColumn("step", lit("Step 4"))
+
+# Run DataFrames sequentially
+df1.show()
+df2.show()
+df3.show()
+df4.show()
+
+# Append all results in sequence
+final_df = df1.unionByName(df2, allowMissingColumns=True) \
+              .unionByName(df3, allowMissingColumns=True) \
+              .unionByName(df4, allowMissingColumns=True)
+
+# Show final result
+final_df.show()
+
+# Store in a Delta table
+final_df.write.mode("overwrite").format("delta").saveAsTable("final_results")
+
