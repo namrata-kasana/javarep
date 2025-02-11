@@ -1,0 +1,28 @@
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.ComponentScan;
+
+@SpringBootApplication
+@ComponentScan(basePackages = "com.example.config")
+public class ConfigLoaderApplication {
+
+    public static void main(String[] args) {
+        // Run Spring Boot Application with args
+        ApplicationContext context = SpringApplication.run(ConfigLoaderApplication.class, args);
+
+        // Get bean name from command-line argument
+        if (args.length > 0) {
+            String beanName = args[0]; // e.g., "bconfig"
+            
+            try {
+                Object configBean = context.getBean(Class.forName("com.example.config." + beanName));
+                System.out.println("Loaded Bean: " + configBean);
+            } catch (Exception e) {
+                System.out.println("Bean not found: " + beanName);
+            }
+        } else {
+            System.out.println("No bean name provided.");
+        }
+    }
+}
