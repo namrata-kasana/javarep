@@ -293,6 +293,47 @@ public class ThreadManager {
         System.out.println("Threads canceled.");
     }
 }
+=========inject==========
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
+@Service
+public class ConnectionConsumerService {
+
+    @Autowired
+    private ConnectionService connectionService;  // Inject the service from the first app
+
+    public void performAdditionalOperations(JNDI1Config config) {
+        // Get the Future<Connection> from the first application
+        Future<Connection> connectionFuture = connectionService.getConnection(config);
+
+        try {
+            // Perform other operations while the connection task is running asynchronously
+            System.out.println("Performing other operations...");
+            
+            // Wait for the connection task to complete (or perform another operation in parallel)
+            Connection connection = connectionFuture.get(30, TimeUnit.SECONDS);  // Wait for up to 30 seconds
+            
+            // Once the connection is available, you can perform further operations on it
+            System.out.println("Connection established: " + connection);
+            
+            // For example, you can now use the connection to perform further tasks:
+            performFurtherOperations(connection);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void performFurtherOperations(Connection connection) {
+        // Simulate additional operations with the connection
+        System.out.println("Performing further operations with the connection...");
+    }
+}
 
 
           
