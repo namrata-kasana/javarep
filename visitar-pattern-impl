@@ -149,4 +149,150 @@ class Conn2 extends BaseConfig {}
 @Prefix("conn3")
 class Conn3 extends BaseConfig {}
 
+============using thread now===================
+
+import java.util.concurrent.Future;
+
+public interface ConnectionVisitor {
+
+    // Methods for each configuration type
+    Future<Connection> visit(JNDI1Config config);
+    Future<Connection> visit(JNDI2Config config);
+    Future<Connection> visit(JNDI3Config config);
+}
+
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
+@Component
+public class Connection implements ConnectionVisitor {
+
+    private ExecutorService executorService = Executors.newFixedThreadPool(3); // ExecutorService with 3 threads
+
+    @Override
+    public Future<Connection> visit(JNDI1Config config) {
+        // Create a long-running task for JNDI1 connection
+        Callable<Connection> task = () -> {
+            // Simulate a long-running connection process (e.g., keep it open)
+            System.out.println("Connecting to JNDI1 with user: " + config.getUser());
+            while (true) {
+                // Simulate long-running task (e.g., periodically check or keep connection alive)
+                try {
+                    Thread.sleep(10000);  // Simulate waiting for some time
+                    System.out.println("JNDI1 connection is still alive.");
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;  // Break the loop if interrupted
+                }
+            }
+            return new Connection();  // Return a new Connection instance
+        };
+
+        // Submit the task to the executor and return the Future
+        return executorService.submit(task);  
+    }
+
+    @Override
+    public Future<Connection> visit(JNDI2Config config) {
+        // Create a long-running task for JNDI2 connection
+        Callable<Connection> task = () -> {
+            System.out.println("Connecting to JNDI2 with user: " + config.getUser());
+            while (true) {
+                try {
+                    Thread.sleep(10000);  // Simulate waiting for some time
+                    System.out.println("JNDI2 connection is still alive.");
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;  // Break the loop if interrupted
+                }
+            }
+            return new Connection();  // Return a new Connection instance
+        };
+
+        // Submit the task to the executor and return the Future
+        return executorService.submit(task);  
+    }
+
+    @Override
+    public Future<Connection> visit(JNDI3Config config) {
+        // Create a long-running task for JNDI3 connection
+        Callable<Connection> task = () -> {
+            System.out.println("Connecting to JNDI3 with user: " + config.getUser());
+            while (true) {
+                try {
+                    Thread.sleep(10000);  // Simulate waiting for some time
+                    System.out.println("JNDI3 connection is still alive.");
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;  // Break the loop if interrupted
+                }
+            }
+            return new Connection();  // Return a new Connection instance
+        };
+
+        // Submit the task to the executor and return the Future
+        return executorService.submit(task);  
+    }
+}
+
+
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+
+import java.util.concurrent.Future;
+
+public class Application {
+
+    public static void main(String[] args) throws Exception {
+        // Assuming this is a Spring application context
+        ApplicationContext applicationContext = new AnnotationConfigApplicationContext(AppConfig.class);
+
+        // Retrieve the configuration beans from the application context
+        BaseConfig conn1 = applicationContext.getBean("conn1", BaseConfig.class);
+        BaseConfig conn2 = applicationContext.getBean("conn2", BaseConfig.class);
+        BaseConfig conn3 = applicationContext.getBean("conn3", BaseConfig.class);
+
+        // Create the visitor to handle the connections
+        ConnectionVisitor visitor = applicationContext.getBean(Connection.class);
+
+        // Create the JNDIConn objects with their respective configurations
+        JNDIConn jndiConn1 = new JNDIConn(conn1);
+        JNDI2Conn jndiConn2 = new JNDI2Conn(conn2);
+        JNDI3Conn jndiConn3 = new JNDI3Conn(conn3);
+
+        // Pass the connections to the visitor for processing
+        Future<Connection> future1 = jndiConn1.accept(visitor); // Connect using conn1 config
+        Future<Connection> future2 = jndiConn2.accept(visitor); // Connect using conn2 config
+        Future<Connection> future3 = jndiConn3.accept(visitor); // Connect using conn3 config
+
+        // Hand over the Future objects to another application that can manage them.
+        // For example, you can store the Futures in a map and another part of the application
+        // can periodically check or interrupt them.
+        System.out.println("Connection 1 future: " + future1);
+        System.out.println("Connection 2 future: " + future2);
+        System.out.println("Connection 3 future: " + future3);
+
+        // Keep the main thread running to simulate long-running application
+        Thread.sleep(60000);  // Sleep for 1 minute (simulate long-running process)
+    }
+}
+
+
+public class ThreadManager {
+    public static void manageThreads(Future<Connection> future1, Future<Connection> future2, Future<Connection> future3) throws Exception {
+        // Simulate waiting for some time before managing the threads
+        Thread.sleep(30000);  // Wait for 30 seconds
+
+        // If you need to stop the threads, you can cancel them
+        future1.cancel(true);  // Attempt to stop the thread
+        future2.cancel(true);  // Attempt to stop the thread
+        future3.cancel(true);  // Attempt to stop the thread
+
+        System.out.println("Threads canceled.");
+    }
+}
+
+
           
