@@ -335,5 +335,51 @@ public class ConnectionConsumerService {
     }
 }
 
+=====pass as map========
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.ApplicationContext;
+import org.springframework.stereotype.Service;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@Service
+public class ConnectionConfigService {
+
+    @Autowired
+    private ApplicationContext applicationContext;
+
+    // This method creates a map of configurations and passes it to another method
+    public void createConfigMapAndProcess() {
+        // Retrieve beans from the application context
+        BaseConfig conn1 = applicationContext.getBean("conn1", BaseConfig.class);
+        BaseConfig conn2 = applicationContext.getBean("conn2", BaseConfig.class);
+        BaseConfig conn3 = applicationContext.getBean("conn3", BaseConfig.class);
+
+        // Create a map to store the configurations
+        Map<String, BaseConfig> configMap = new HashMap<>();
+        configMap.put("conn1", conn1);
+        configMap.put("conn2", conn2);
+        configMap.put("conn3", conn3);
+
+        // Pass the map to another method for processing
+        processConfigurations(configMap);
+    }
+
+    // Method to process the configurations
+    private void processConfigurations(Map<String, BaseConfig> configMap) {
+        // Iterate through the map and process each config
+        configMap.forEach((key, config) -> {
+            System.out.println("Processing configuration for: " + key);
+            System.out.println("User: " + config.getUser());
+            System.out.println("Password: " + config.getPassword());
+            System.out.println("Server URL: " + config.getServerUrl());
+        });
+    }
+}
+
+
 
           
