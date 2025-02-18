@@ -1,0 +1,152 @@
+public class Application {
+
+    public static void main(String[] args) {
+        // Assuming this is a Spring application context
+        ApplicationContext applicationContext = new AnnotationConfigApplicationContext(AppConfig.class);
+
+        // Retrieve the configuration beans from the application context
+        BaseConfig conn1 = applicationContext.getBean("conn1", BaseConfig.class);
+        BaseConfig conn2 = applicationContext.getBean("conn2", BaseConfig.class);
+        BaseConfig conn3 = applicationContext.getBean("conn3", BaseConfig.class);
+
+        // Create the visitor to handle the connections
+        ConnectionVisitor visitor = applicationContext.getBean(Connection.class);
+
+        // Create the JNDIConn objects with their respective configurations
+        JNDIConn jndiConn1 = new JNDIConn(conn1);
+        JNDI2Conn jndiConn2 = new JNDI2Conn(conn2);
+        JNDI3Conn jndiConn3 = new JNDI3Conn(conn3);
+
+        // Pass the connections to the visitor for processing
+        jndiConn1.accept(visitor); // Connect using conn1 config
+        jndiConn2.accept(visitor); // Connect using conn2 config
+        jndiConn3.accept(visitor); // Connect using conn3 config
+    }
+}
+
+
+@Component
+class Connection implements ConnectionVisitor {
+
+    @Override
+    public Connection visit(JNDI1Config config) {
+        // Connection logic for JNDI1Config
+        System.out.println("Connecting to JNDI1 with user: " + config.getUser());
+        return new Connection(); // Return a new connection (example)
+    }
+
+    @Override
+    public Connection visit(JNDI2Config config) {
+        // Connection logic for JNDI2Config
+        System.out.println("Connecting to JNDI2 with user: " + config.getUser());
+        return new Connection(); // Return a new connection (example)
+    }
+
+    @Override
+    public Connection visit(JNDI3Config config) {
+        // Connection logic for JNDI3Config
+        System.out.println("Connecting to JNDI3 with user: " + config.getUser());
+        return new Connection(); // Return a new connection (example)
+    }
+}
+
+@Component
+class JNDIConn extends abc {
+
+    @Autowired
+    private Conn1 config;  // Injecting the configuration (conn1)
+
+    public JNDIConn(BaseConfig config) {
+        this.config = (Conn1) config;
+    }
+
+    @Override
+    public <T> T accept(ConnectionVisitor visitor) {
+        return (T) visitor.visit(this.config);  // Pass the injected configuration to the visitor
+    }
+}
+
+@Component
+class JNDI2Conn extends abc {
+
+    @Autowired
+    private Conn2 config;  // Injecting the configuration (conn2)
+
+    public JNDI2Conn(BaseConfig config) {
+        this.config = (Conn2) config;
+    }
+
+    @Override
+    public <T> T accept(ConnectionVisitor visitor) {
+        return (T) visitor.visit(this.config);  // Pass the injected configuration to the visitor
+    }
+}
+
+@Component
+class JNDI3Conn extends abc {
+
+    @Autowired
+    private Conn3 config;  // Injecting the configuration (conn3)
+
+    public JNDI3Conn(BaseConfig config) {
+        this.config = (Conn3) config;
+    }
+
+    @Override
+    public <T> T accept(ConnectionVisitor visitor) {
+        return (T) visitor.visit(this.config);  // Pass the injected configuration to the visitor
+    }
+}
+
+
+
+
+public interface ConnectionVisitor {
+
+    // Methods for each configuration type
+    Connection visit(JNDI1Config config);
+    Connection visit(JNDI2Config config);
+    Connection visit(JNDI3Config config);
+}
+
+
+// Abstract class for each type of connection
+abstract class abc {
+    public abstract <T> T accept(ConnectionVisitor visitor);
+}
+
+
+  import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
+
+@ConfigurationProperties
+class BaseConfig {
+    String user;
+    String pass;
+    String serverUrl;
+
+    // getters and setters
+    public String getUser() { return user; }
+    public void setUser(String user) { this.user = user; }
+
+    public String getPass() { return pass; }
+    public void setPass(String pass) { this.pass = pass; }
+
+    public String getServerUrl() { return serverUrl; }
+    public void setServerUrl(String serverUrl) { this.serverUrl = serverUrl; }
+}
+
+@Component
+@Prefix("conn1")
+class Conn1 extends BaseConfig {}
+
+@Component
+@Prefix("conn2")
+class Conn2 extends BaseConfig {}
+
+@Component
+@Prefix("conn3")
+class Conn3 extends BaseConfig {}
+
+          
