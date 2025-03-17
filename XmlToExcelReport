@@ -1,0 +1,137 @@
+import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import org.w3c.dom.*;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+public class XmlToExcelReport {
+
+    // Simple class to hold our record data
+    static class ReportRecord {
+        String id;
+        String message;
+        String timestamp;
+
+        ReportRecord(String id, String message, String timestamp) {
+            this.id = id;
+            this.message = message;
+            this.timestamp = timestamp;
+        }
+    }
+
+    public static void main(String[] args) {
+        // Replace with your REST endpoint URL
+        String endpointUrl = "http://example.com/api/data";
+
+        try {
+            // Step 1: Download the XML from the REST endpoint
+            InputStream xmlInput = downloadXmlFromUrl(endpointUrl);
+
+            // Step 2: Parse the XML and filter records by status ("ERROR" or "ABORTED")
+            List<ReportRecord> filteredRecords = parseAndFilterXml(xmlInput);
+
+            // Step 3: Create an Excel report with the filtered XML data
+            createExcelReport(filteredRecords, "ErrorReport.xlsx");
+
+            System.out.println("Excel report created successfully.");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Downloads the XML file from the given URL and returns an InputStream
+    private static InputStream downloadXmlFromUrl(String endpointUrl) throws IOException {
+        URL url = new URL(endpointUrl);
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("GET");
+        connection.setConnectTimeout(10000);  // 10 seconds
+        connection.setReadTimeout(10000);     // 10 seconds
+        int responseCode = connection.getResponseCode();
+        if(responseCode == HttpURLConnection.HTTP_OK) {
+            return connection.getInputStream();
+        } else {
+            throw new IOException("Failed to download XML, HTTP response code: " + responseCode);
+        }
+    }
+
+    // Parses the XML input stream and filters records based on status
+    private static List<ReportRecord> parseAndFilterXml(InputStream xmlInput) throws Exception {
+        List<ReportRecord> recordList = new ArrayList<>();
+
+        // Initialize XML document parser
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        Document doc = builder.parse(xmlInput);
+        doc.getDocumentElement().normalize();
+
+        // Assume the XML has multiple <record> elements
+        NodeList recordNodes = doc.getElementsByTagName("record");
+
+        for (int i = 0; i < recordNodes.getLength(); i++) {
+            Node recordNode = recordNodes.item(i);
+            if (recordNode.getNodeType() == Node.ELEMENT_NODE) {
+                Element recordElement = (Element) recordNode;
+                String status = getTagValue("status", recordElement);
+
+                // Filter for status values "ERROR" or "ABORTED" (case-insensitive)
+                if (status != null && (status.equalsIgnoreCase("ERROR") || status.equalsIgnoreCase("ABORTED"))) {
+                    String id = getTagValue("id", recordElement);
+                    String message = getTagValue("message", recordElement);
+                    String timestamp = getTagValue("timestamp", recordElement);
+
+                    ReportRecord record = new ReportRecord(id, message, timestamp);
+                    recordList.add(record);
+                }
+            }
+        }
+        return recordList;
+    }
+
+    // Utility method to get the text content of a tag from an element
+    private static String getTagValue(String tag, Element element) {
+        NodeList nodeList = element.getElementsByTagName(tag);
+        if (nodeList != null && nodeList.getLength() > 0) {
+            Node node = nodeList.item(0);
+            return node.getTextContent();
+        }
+        return null;
+    }
+
+    // Creates an Excel report from a list of filtered records
+    private static void createExcelReport(List<ReportRecord> records, String fileName) throws IOException {
+        Workbook workbook = new XSSFWorkbook();
+        Sheet sheet = workbook.createSheet("Error Records");
+
+        // Create header row
+        Row headerRow = sheet.createRow(0);
+        headerRow.createCell(0).setCellValue("ID");
+        headerRow.createCell(1).setCellValue("Message");
+        headerRow.createCell(2).setCellValue("Timestamp");
+
+        // Populate data rows
+        int rowNum = 1;
+        for (ReportRecord record : records) {
+            Row row = sheet.createRow(rowNum++);
+            row.createCell(0).setCellValue(record.id);
+            row.createCell(1).setCellValue(record.message);
+            row.createCell(2).setCellValue(record.timestamp);
+        }
+
+        // Autosize the columns for better readability
+        for (int i = 0; i < 3; i++) {
+            sheet.autoSizeColumn(i);
+        }
+
+        // Write the workbook to a file
+        try (FileOutputStream fileOut = new FileOutputStream(fileName)) {
+            workbook.write(fileOut);
+        }
+        workbook.close();
+    }
+}
